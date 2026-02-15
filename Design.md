@@ -5,21 +5,24 @@
 
 ## 1. System Overview
 
-NyayaMitra is an AI-powered lawyer assistant chatbot that provides legal advice and guidance to users who cannot access traditional legal representation. The system leverages Natural Language Processing (NLP), Retrieval Augmented Generation (RAG), and Google PaLM to deliver accurate, context-aware legal assistance.
+NyayaMitra is an AI-powered lawyer assistant chatbot that provides legal advice and guidance to users who cannot access traditional legal representation. The system leverages Natural Language Processing (NLP), Retrieval Augmented Generation (RAG), and AWS AI services (Amazon Bedrock, Amazon Lex, Amazon Translate) to deliver accurate, context-aware legal assistance.
 
 ### Key Capabilities
-- Accept user queries in natural language (English and Hindi)
+- Accept user queries in natural language (English and Hindi via Amazon Translate)
+- Conversational interface powered by Amazon Lex
 - Analyze and process legal documents
 - Search comprehensive legal knowledge base (IPC, labor laws, constitutional laws, etc.)
-- Generate simple, understandable legal explanations and advice
+- Generate simple, understandable legal explanations and advice using Amazon Bedrock
 - Provide case-specific guidance and document drafting assistance
 - Maintain conversation context for multi-turn interactions
 - Display clear disclaimers about AI assistance limitations
 
 ### Technology Foundation
-- **LLM**: Google PaLM for natural language understanding and generation
+- **LLM**: Amazon Bedrock (Claude, Llama, or Titan models) for natural language understanding and generation
+- **Conversational AI**: Amazon Lex for chatbot interface
+- **Translation**: Amazon Translate for multilingual support
 - **Architecture**: RAG (Retrieval Augmented Generation) for accurate legal information retrieval
-- **Backend**: FastAPI for high-performance API services
+- **Backend**: FastAPI (Python) for high-performance API services
 - **Frontend**: HTML5, CSS3, JavaScript with React.js for interactive UI
 - **Infrastructure**: AWS cloud services for scalability and reliability
 
@@ -42,24 +45,30 @@ NyayaMitra is an AI-powered lawyer assistant chatbot that provides legal advice 
                              │
                              │
 ┌────────────────────────────▼────────────────────────────────────┐
-│                    FASTAPI BACKEND SERVER                       │
+│                    FLASK BACKEND SERVER                         │
 │                      (AWS EC2/Lambda)                           │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  Amazon Lex Integration                                  │  │
+│  │  - Conversational Interface                              │  │
+│  │  - Intent Recognition                                    │  │
+│  │  - Slot Filling                                          │  │
+│  └──────────────────────────────────────────────────────────┘  │
 │  ┌──────────────────────────────────────────────────────────┐  │
 │  │  Query Processing Module                                 │  │
 │  │  - NLP Processing                                        │  │
-│  │  - Language Detection (English/Hindi)                    │  │
-│  │  - Intent Classification                                 │  │
+│  │  - Language Detection                                    │  │
+│  │  - Amazon Translate Integration                          │  │
 │  └──────────────────────────────────────────────────────────┘  │
 │  ┌──────────────────────────────────────────────────────────┐  │
 │  │  RAG Engine                                              │  │
-│  │  - Query Embedding                                       │  │
-│  │  - Vector Search                                         │  │
+│  │  - Query Embedding (Amazon Bedrock)                      │  │
+│  │  - Vector Search (OpenSearch)                            │  │
 │  │  - Context Retrieval                                     │  │
 │  └──────────────────────────────────────────────────────────┘  │
 │  ┌──────────────────────────────────────────────────────────┐  │
-│  │  LLM Integration (Google PaLM)                           │  │
+│  │  Amazon Bedrock Integration                              │  │
 │  │  - Prompt Engineering                                    │  │
-│  │  - Response Generation                                   │  │
+│  │  - Response Generation (Claude/Llama/Titan)             │  │
 │  │  - Answer Synthesis                                      │  │
 │  └──────────────────────────────────────────────────────────┘  │
 │  ┌──────────────────────────────────────────────────────────┐  │
@@ -73,8 +82,8 @@ NyayaMitra is an AI-powered lawyer assistant chatbot that provides legal advice 
                 ┌────────────┴────────────┐
                 │                         │
 ┌───────────────▼──────────┐  ┌──────────▼─────────────────────┐
-│   VECTOR DATABASE        │  │   RELATIONAL DATABASE          │
-│   (Chroma DB/Pinecone)   │  │   (PostgreSQL/MongoDB)         │
+│   VECTOR DATABASE        │  │   DATABASE                     │
+│   (Amazon OpenSearch)    │  │   (DynamoDB/PostgreSQL)        │
 │                          │  │                                │
 │ - Legal Document         │  │ - User Sessions                │
 │   Embeddings             │  │ - Conversation History         │
@@ -123,33 +132,35 @@ NyayaMitra is an AI-powered lawyer assistant chatbot that provides legal advice 
 **Technology**: AWS API Gateway
 
 **Responsibilities**:
-- Route incoming HTTP requests to backend services
+- Route incoming HTTP requests to backend services (Flask API or Amazon Lex)
 - Request validation and sanitization
 - Rate limiting and throttling
 - CORS configuration
 - API versioning
-- Authentication and authorization (if needed)
+- Authentication and authorization (AWS Cognito if needed)
 
 **Endpoints**:
 ```
-POST /api/v1/chat          - Send user query
+POST /api/v1/chat          - Send user query (via Lex or direct)
 POST /api/v1/document      - Upload document for analysis
 GET  /api/v1/session       - Retrieve conversation history
+POST /api/v1/translate     - Translate text (Amazon Translate)
 POST /api/v1/feedback      - Submit user feedback
 GET  /api/v1/health        - Health check endpoint
 ```
 
 ### 3.3 Query Processing Module
 
-**Technology**: Python, FastAPI, spaCy/NLTK
+**Technology**: Python, FastAPI, spaCy/NLTK, Amazon Translate
 
 **Responsibilities**:
 - Receive and parse user queries
-- Detect language (English/Hindi)
+- Detect language (English/Hindi) using Amazon Translate
 - Perform NLP preprocessing (tokenization, lemmatization)
 - Classify query intent (case analysis, document review, legal research, etc.)
 - Extract entities (case types, legal sections, dates, etc.)
 - Validate and sanitize input
+- Translate queries if needed using Amazon Translate
 
 **Processing Pipeline**:
 ```
@@ -159,11 +170,11 @@ Intent Classification → Entity Extraction → Query Enrichment
 
 ### 3.4 RAG (Retrieval Augmented Generation) Engine
 
-**Technology**: LangChain/LlamaIndex, Chroma DB/Pinecone
+**Technology**: LangChain/LlamaIndex, Amazon OpenSearch, Amazon Bedrock
 
 **Responsibilities**:
-- Convert user queries into vector embeddings
-- Perform semantic search in legal knowledge base
+- Convert user queries into vector embeddings using Amazon Bedrock (Titan Embeddings)
+- Perform semantic search in legal knowledge base using Amazon OpenSearch
 - Retrieve relevant legal documents, statutes, and case laws
 - Rank and filter retrieved documents by relevance
 - Construct context for LLM prompt
@@ -185,11 +196,11 @@ Document Retrieval → Relevance Ranking → Context Assembly
 
 ### 3.5 LLM Integration Module
 
-**Technology**: Google PaLM API
+**Technology**: Amazon Bedrock (Claude, Llama, or Titan models)
 
 **Responsibilities**:
 - Construct prompts with retrieved context
-- Send requests to Google PaLM API
+- Send requests to Amazon Bedrock API
 - Handle API responses and errors
 - Post-process generated responses
 - Ensure response quality and relevance
@@ -233,7 +244,7 @@ Chunking → Analysis → Summary Generation → Response
 - User preferences and settings
 - Feedback and ratings
 
-**Vector Database (Chroma DB/Pinecone)**:
+**Vector Database (Amazon OpenSearch)**:
 - Legal document embeddings
 - Statute and law vectors
 - Case law embeddings
@@ -524,7 +535,7 @@ const chatAPI = {
 - Pydantic for data validation
 - SQLAlchemy for database ORM
 - LangChain for RAG implementation
-- Google PaLM API client
+- Boto3 for AWS SDK (Amazon Bedrock, Lex, Translate, OpenSearch)
 
 **Project Structure**:
 ```
@@ -541,7 +552,9 @@ backend/
 │   ├── core/
 │   │   ├── nlp_processor.py    # NLP processing
 │   │   ├── rag_engine.py       # RAG implementation
-│   │   ├── llm_client.py       # Google PaLM integration
+│   │   ├── bedrock_client.py   # Amazon Bedrock integration
+│   │   ├── lex_client.py       # Amazon Lex integration
+│   │   ├── translate_client.py # Amazon Translate integration
 │   │   └── document_processor.py
 │   ├── models/
 │   │   ├── schemas.py          # Pydantic models
@@ -601,18 +614,26 @@ async def health_check():
 
 ```python
 # rag_engine.py
-from langchain.embeddings import GooglePalmEmbeddings
-from langchain.vectorstores import Chroma
-from langchain.llms import GooglePalm
+import boto3
+from langchain.embeddings import BedrockEmbeddings
+from langchain.vectorstores import OpenSearchVectorSearch
+from langchain.llms.bedrock import Bedrock
 
 class RAGEngine:
     def __init__(self):
-        self.embeddings = GooglePalmEmbeddings()
-        self.vector_store = Chroma(
-            embedding_function=self.embeddings,
-            persist_directory="./legal_kb"
+        self.bedrock_client = boto3.client('bedrock-runtime')
+        self.embeddings = BedrockEmbeddings(
+            client=self.bedrock_client,
+            model_id="amazon.titan-embed-text-v1"
         )
-        self.llm = GooglePalm(temperature=0.3)
+        self.vector_store = OpenSearchVectorSearch(
+            embedding_function=self.embeddings,
+            opensearch_url="your-opensearch-endpoint"
+        )
+        self.llm = Bedrock(
+            client=self.bedrock_client,
+            model_id="anthropic.claude-v2"
+        )
     
     def retrieve_context(self, query: str, k: int = 5):
         """Retrieve relevant legal documents"""
@@ -663,7 +684,7 @@ class Conversation(Base):
 - TLS 1.3 for all data in transit
 - AES-256 encryption for data at rest
 - Encrypted database connections
-- Secure API key storage in AWS Secrets Manager
+- Secure API key storage in AWS Secrets Manager (for Amazon Bedrock, Lex, Translate)
 
 **Access Control**:
 - IAM roles and policies for AWS resources
@@ -765,6 +786,7 @@ class Conversation(Base):
 - E-filing system integration
 - Payment gateway for premium features
 - Lawyer referral network integration
+- Additional language support via Amazon Translate
 
 **API Ecosystem**:
 - Public API for third-party developers
@@ -804,11 +826,11 @@ class Conversation(Base):
 
 ## Conclusion
 
-NyayaMitra's design focuses on providing accessible, accurate, and secure AI-powered legal assistance. The architecture leverages modern cloud technologies, advanced NLP, and RAG to deliver professional-grade legal guidance to users who cannot access traditional legal representation. The system is designed to be scalable, maintainable, and compliant with legal and ethical standards.
+NyayaMitra's design focuses on providing accessible, accurate, and secure AI-powered legal assistance. The architecture leverages modern AWS cloud technologies (Amazon Bedrock, Amazon Lex, Amazon Translate), advanced NLP, and RAG to deliver professional-grade legal guidance to users who cannot access traditional legal representation. The system is designed to be scalable, maintainable, and compliant with legal and ethical standards.
 
 ---
 
 **Document Version**: 1.0  
 **Last Updated**: February 2026  
 **Project**: NyayaMitra - AI Lawyer Assistant  
-**Technology**: RAG, Google PaLM, FastAPI, AWS
+**Technology**: RAG, Amazon Bedrock, Amazon Lex, Amazon Translate, FastAPI, AWS
